@@ -1,0 +1,15 @@
+{
+  "name": "macro-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal macro briefing dashboard",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0"
+  }
+}
