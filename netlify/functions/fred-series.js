@@ -3,11 +3,12 @@ const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
 // FRED native unit transformations applied server-side
 // pc1 = percent change from year ago; chg = period-over-period change
 const UNITS_OVERRIDE = {
-  CPIAUCSL:  "pc1",
-  CPILFESL:  "pc1",
-  PCEPI:     "pc1",
-  PCEPILFE:  "pc1",
-  PAYEMS:    "chg",
+  CPIAUCSL:      "pc1",
+  CPILFESL:      "pc1",
+  PCEPI:         "pc1",
+  PCEPILFE:      "pc1",
+  PAYEMS:        "chg",
+  CES0500000003: "pc1",  // AHE YoY % — wage inflation proxy
 };
 
 // Multiply raw FRED value by this factor before returning

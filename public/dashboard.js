@@ -14,10 +14,12 @@ const PANEL_CONFIG = [
     endpoint: "/.netlify/functions/fred-series",
     metrics: [
       { label: "Unemployment Rate", series: "UNRATE", unit: "%" },
-      { label: "Nonfarm Payrolls (chg, 000s)", series: "PAYEMS", unit: "k", delta: true },
+      { label: "Nonfarm Payrolls (chg, 000s)", series: "PAYEMS", unit: "k" },
       { label: "Initial Claims", series: "ICSA", unit: "" },
       { label: "Continuing Claims", series: "CCSA", unit: "" },
       { label: "JOLTS Openings", series: "JTSJOL", unit: "k" },
+      { label: "JOLTS Hires Rate", series: "JTSHIR", unit: "%" },
+      { label: "Avg Hourly Earnings YoY", series: "CES0500000003", unit: "%" },
     ],
   },
   {
