@@ -19,29 +19,27 @@ async function fetchOneSeries(seriesId, apiKey) {
   return { value, date: obs?.date ?? null };
 }
 
-export default async (req) => {
+exports.handler = async (event) => {
   const apiKey = process.env.FRED_API_KEY;
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "FRED_API_KEY not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "FRED_API_KEY not configured" }),
+    };
   }
 
-  const raw = new URL(req.url).searchParams.get("series") ?? "";
-  const ids = raw
-    .split(",")
-    .map(s => s.trim().toUpperCase())
-    .filter(Boolean);
+  const raw = event.queryStringParameters?.series ?? "";
+  const ids = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
 
   if (ids.length === 0) {
-    return new Response(
-      JSON.stringify({ error: "no series requested" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "no series requested" }),
+    };
   }
 
-  // Fetch all series in parallel
   const results = await Promise.allSettled(ids.map(id => fetchOneSeries(id, apiKey)));
 
   const series = {};
@@ -52,12 +50,9 @@ export default async (req) => {
       : { value: null, date: null, error: r.reason?.message };
   }
 
-  return new Response(
-    JSON.stringify({ series, fetchedAt: new Date().toISOString() }),
-    { headers: { "Content-Type": "application/json" } }
-  );
-};
-
-export const config = {
-  path: "/api/fred-series",
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ series, fetchedAt: new Date().toISOString() }),
+  };
 };

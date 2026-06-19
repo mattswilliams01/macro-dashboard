@@ -11,7 +11,7 @@ const PANEL_CONFIG = [
     id: "labor",
     title: "Labor Market",
     type: "metrics",
-    endpoint: "/api/fred-series",
+    endpoint: "/.netlify/functions/fred-series",
     metrics: [
       { label: "Unemployment Rate", series: "UNRATE", unit: "%" },
       { label: "Nonfarm Payrolls (chg, 000s)", series: "PAYEMS", unit: "k", delta: true },
@@ -24,7 +24,7 @@ const PANEL_CONFIG = [
     id: "inflation",
     title: "Inflation",
     type: "metrics",
-    endpoint: "/api/fred-series",
+    endpoint: "/.netlify/functions/fred-series",
     metrics: [
       { label: "CPI Headline YoY", series: "CPIAUCSL", unit: "%" },
       { label: "CPI Core YoY", series: "CPILFESL", unit: "%" },
@@ -37,7 +37,7 @@ const PANEL_CONFIG = [
     id: "rates-credit",
     title: "Rates, Spreads & Credit",
     type: "metrics",
-    endpoint: "/api/fred-series",
+    endpoint: "/.netlify/functions/fred-series",
     metrics: [
       { label: "10Y Treasury", series: "DGS10", unit: "%" },
       { label: "2Y Treasury", series: "DGS2", unit: "%" },
@@ -103,7 +103,7 @@ const PANEL_CONFIG = [
 
 async function fetchManualEntry(key) {
   try {
-    const res = await fetch(`/api/manual-entry?key=${encodeURIComponent(key)}`);
+    const res = await fetch(`/.netlify/functions/manual-entry?key=${encodeURIComponent(key)}`);
     if (!res.ok) return { value: null, asOf: null };
     return await res.json();
   } catch {
@@ -112,7 +112,7 @@ async function fetchManualEntry(key) {
 }
 
 async function postManualEntry(key, value) {
-  const res = await fetch("/api/manual-entry", {
+  const res = await fetch("/.netlify/functions/manual-entry", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key, value }),
