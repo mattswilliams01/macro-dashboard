@@ -59,5 +59,5 @@ export default async (req) => {
 };
 
 export const config = {
-  path: "/.netlify/functions/fred-series",
+  path: "/api/fred-series",
 };

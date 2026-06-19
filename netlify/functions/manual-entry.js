@@ -47,5 +47,5 @@ export default async (req) => {
 };
 
 export const config = {
-  path: "/.netlify/functions/manual-entry",
+  path: "/api/manual-entry",
 };

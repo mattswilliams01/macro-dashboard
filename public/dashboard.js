@@ -103,7 +103,7 @@ const PANEL_CONFIG = [
 
 async function fetchManualEntry(key) {
   try {
-    const res = await fetch(`/.netlify/functions/manual-entry?key=${encodeURIComponent(key)}`);
+    const res = await fetch(`/api/manual-entry?key=${encodeURIComponent(key)}`);
     if (!res.ok) return { value: null, asOf: null };
     return await res.json();
   } catch {
@@ -112,7 +112,7 @@ async function fetchManualEntry(key) {
 }
 
 async function postManualEntry(key, value) {
-  const res = await fetch("/.netlify/functions/manual-entry", {
+  const res = await fetch("/api/manual-entry", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key, value }),
