@@ -4,8 +4,8 @@ const PANEL_CONFIG = [
   {
     id: "fed-policy",
     title: "Fed Policy",
-    type: "feed",
-    wired: false,
+    type: "headlines",
+    endpoint: "/.netlify/functions/fed-feed",
   },
   {
     id: "labor",
@@ -103,8 +103,7 @@ const PANEL_CONFIG = [
     id: "geopolitical",
     title: "Geopolitical Headlines",
     type: "headlines",
-    wired: false,
-    endpoint: "/api/news",
+    endpoint: "/.netlify/functions/news",
     topics: ["Strait of Hormuz", "Iran ceasefire", "FOMC", "oil supply"],
   },
 ];
