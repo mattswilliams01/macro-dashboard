@@ -20,7 +20,7 @@ async function fetchOneSeries(seriesId, apiKey) {
 }
 
 exports.handler = async (event) => {
-  const apiKey = process.env.FRED_API_KEY;
+  const apiKey = process.env.FRED_KEY_V2;
   if (!apiKey) {
     return {
       statusCode: 500,
