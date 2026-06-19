@@ -5,9 +5,7 @@ const PANEL_CONFIG = [
     id: "fed-policy",
     title: "Fed Policy",
     type: "feed",
-    endpoint: "/api/fred-series",   // placeholder — wired in Step 2+
-    metrics: [],
-    feedKey: "fed",
+    wired: false,
   },
   {
     id: "labor",
@@ -86,6 +84,7 @@ const PANEL_CONFIG = [
     id: "energy",
     title: "Energy / Oil Supply",
     type: "metrics",
+    wired: false,
     endpoint: "/api/eia",
     metrics: [
       { label: "Crude Inventories (Mbbls)", series: "eia_crude_inv", unit: "Mbbls" },
@@ -96,6 +95,7 @@ const PANEL_CONFIG = [
     id: "geopolitical",
     title: "Geopolitical Headlines",
     type: "headlines",
+    wired: false,
     endpoint: "/api/news",
     topics: ["Strait of Hormuz", "Iran ceasefire", "FOMC", "oil supply"],
   },
@@ -210,7 +210,7 @@ async function populatePanel(panel) {
   const body = document.getElementById(`body-${panel.id}`);
   const freshEl = document.getElementById(`fresh-${panel.id}`);
 
-  if (panel.type === "feed") {
+  if (panel.wired === false) {
     body.innerHTML = '<span class="placeholder">not yet wired</span>';
     freshEl.textContent = "—";
     return;
