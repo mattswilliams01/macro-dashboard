@@ -210,6 +210,12 @@ async function populatePanel(panel) {
   const body = document.getElementById(`body-${panel.id}`);
   const freshEl = document.getElementById(`fresh-${panel.id}`);
 
+  if (panel.type === "feed") {
+    body.innerHTML = '<span class="placeholder">not yet wired</span>';
+    freshEl.textContent = "—";
+    return;
+  }
+
   if (panel.type === "manual") {
     body.innerHTML = '<span class="placeholder">fetching…</span>';
     const fetched = await Promise.all(
