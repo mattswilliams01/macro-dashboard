@@ -55,8 +55,15 @@ const PANEL_CONFIG = [
     id: "positioning",
     title: "Positioning & Flow",
     type: "mixed",
-    endpoint: "/api/cot",
-    metrics: [],
+    endpoint: "/.netlify/functions/cot",
+    metrics: [
+      { label: "ES Lev Net (contracts)", series: "es_lev_net", unit: "" },
+      { label: "ES Lev Long",            series: "es_lev_long", unit: "" },
+      { label: "ES Lev Short",           series: "es_lev_short", unit: "" },
+      { label: "NQ Lev Net (contracts)", series: "nq_lev_net", unit: "" },
+      { label: "NQ Lev Long",            series: "nq_lev_long", unit: "" },
+      { label: "NQ Lev Short",           series: "nq_lev_short", unit: "" },
+    ],
     manualFields: [
       {
         key: "naaim",
@@ -86,8 +93,7 @@ const PANEL_CONFIG = [
     id: "energy",
     title: "Energy / Oil Supply",
     type: "metrics",
-    wired: false,
-    endpoint: "/api/eia",
+    endpoint: "/.netlify/functions/eia",
     metrics: [
       { label: "Crude Inventories (Mbbls)", series: "eia_crude_inv", unit: "Mbbls" },
       { label: "WTI Spot", series: "eia_wti", unit: "$/bbl" },
@@ -241,19 +247,45 @@ async function populatePanel(panel) {
   if (panel.type === "mixed") {
     body.innerHTML = '<span class="placeholder">fetching…</span>';
     const manualFields = panel.manualFields || [];
-    const fetched = await Promise.all(
-      manualFields.map(f => fetchManualEntry(f.key))
-    );
+    const hasApiMetrics = panel.metrics?.length && panel.endpoint;
+
+    const [fetchedManual, apiData] = await Promise.all([
+      Promise.all(manualFields.map(f => fetchManualEntry(f.key))),
+      hasApiMetrics
+        ? fetch(buildEndpointUrl(panel)).then(r => r.ok ? r.json() : null).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
     body.innerHTML = "";
-    let latestAsOf = null;
+
+    // API metrics (COT) first
+    if (apiData?.series && panel.metrics?.length) {
+      for (const m of panel.metrics) {
+        const s = apiData.series[m.series];
+        body.appendChild(renderMetricRow(m.label, s?.value ?? null, m.unit, s?.date ?? null));
+      }
+      if (manualFields.length) {
+        const sep = document.createElement("div");
+        sep.style.cssText = "border-top:1px solid var(--border);margin:6px 0";
+        body.appendChild(sep);
+      }
+    }
+
+    // Manual fields below
+    let latestManualAsOf = null;
     manualFields.forEach((field, i) => {
-      const stored = fetched[i];
+      const stored = fetchedManual[i];
       body.appendChild(renderManualField(field, stored));
-      if (stored.asOf && (!latestAsOf || stored.asOf > latestAsOf)) latestAsOf = stored.asOf;
+      if (stored.asOf && (!latestManualAsOf || stored.asOf > latestManualAsOf)) latestManualAsOf = stored.asOf;
     });
-    // API metrics (COT etc) wired in a later step
-    freshEl.textContent = latestAsOf ? `as of ${formatFreshness(latestAsOf)}` : "no data yet";
-    freshEl.className = `panel-freshness ${latestAsOf ? freshnessClass(latestAsOf, 14) : "error"}`;
+
+    // Freshness: prefer API date, fall back to manual entry date
+    const apiDate = apiData?.series
+      ? Object.values(apiData.series).map(s => s?.date).filter(Boolean).sort().pop()
+      : null;
+    const freshDate = apiDate || latestManualAsOf;
+    freshEl.textContent = freshDate ? `as of ${formatFreshness(freshDate)}` : "no data yet";
+    freshEl.className = `panel-freshness ${freshDate ? freshnessClass(freshDate, 14) : "error"}`;
     return;
   }
 
