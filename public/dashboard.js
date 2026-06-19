@@ -43,8 +43,8 @@ const PANEL_CONFIG = [
     metrics: [
       { label: "10Y Treasury", series: "DGS10", unit: "%" },
       { label: "2Y Treasury", series: "DGS2", unit: "%" },
-      { label: "2s10s Spread", series: "T10Y2Y", unit: "bps" },
-      { label: "3M10Y Spread", series: "T10Y3M", unit: "bps" },
+      { label: "2s10s Spread", series: "T10Y2Y", unit: "% pts" },
+      { label: "3M10Y Spread", series: "T10Y3M", unit: "% pts" },
       { label: "HY OAS Spread", series: "BAMLH0A0HYM2", unit: "bps" },
       { label: "5Y TIPS Breakeven", series: "T5YIE", unit: "%" },
       { label: "M2", series: "M2SL", unit: "$B" },
@@ -101,21 +101,24 @@ const PANEL_CONFIG = [
   },
 ];
 
-// Local storage keys for manual entries
-const MANUAL_STORE_KEY = "macro_manual_entries";
-
-function loadManualEntries() {
+async function fetchManualEntry(key) {
   try {
-    return JSON.parse(localStorage.getItem(MANUAL_STORE_KEY) || "{}");
+    const res = await fetch(`/.netlify/functions/manual-entry?key=${encodeURIComponent(key)}`);
+    if (!res.ok) return { value: null, asOf: null };
+    return await res.json();
   } catch {
-    return {};
+    return { value: null, asOf: null };
   }
 }
 
-function saveManualEntry(key, value, asOf) {
-  const entries = loadManualEntries();
-  entries[key] = { value, asOf };
-  localStorage.setItem(MANUAL_STORE_KEY, JSON.stringify(entries));
+async function postManualEntry(key, value) {
+  const res = await fetch("/.netlify/functions/manual-entry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, value }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
 }
 
 function formatFreshness(isoDate) {
@@ -146,8 +149,7 @@ function renderMetricRow(label, value, unit, asOf) {
   return el;
 }
 
-function renderManualField(field, entries) {
-  const stored = entries[field.key] || {};
+function renderManualField(field, stored) {
   const wrapper = document.createElement("div");
   wrapper.innerHTML = `
     <div class="metric-row">
@@ -160,14 +162,30 @@ function renderManualField(field, entries) {
       <button data-key="${field.key}">Save</button>
     </div>
   `;
-  wrapper.querySelector("button").addEventListener("click", () => {
+  wrapper.querySelector("button").addEventListener("click", async () => {
     const inp = document.getElementById(`inp-${field.key}`);
+    const btn = wrapper.querySelector("button");
     const val = parseFloat(inp.value);
     if (isNaN(val)) return;
-    const now = new Date().toISOString();
-    saveManualEntry(field.key, val, now);
-    document.getElementById(`mv-${field.key}`).textContent = val;
-    inp.value = "";
+    btn.disabled = true;
+    btn.textContent = "…";
+    try {
+      const saved = await postManualEntry(field.key, val);
+      document.getElementById(`mv-${field.key}`).textContent = saved.value;
+      inp.value = "";
+      // Update panel freshness to reflect the new asOf
+      const panelEl = wrapper.closest(".panel");
+      if (panelEl) {
+        const freshEl = panelEl.querySelector(".panel-freshness");
+        if (freshEl) freshEl.textContent = `as of ${formatFreshness(saved.asOf)}`;
+      }
+    } catch {
+      btn.textContent = "err";
+      setTimeout(() => { btn.textContent = "Save"; btn.disabled = false; }, 2000);
+      return;
+    }
+    btn.textContent = "Save";
+    btn.disabled = false;
   });
   return wrapper;
 }
@@ -193,29 +211,38 @@ async function populatePanel(panel) {
   const freshEl = document.getElementById(`fresh-${panel.id}`);
 
   if (panel.type === "manual") {
+    body.innerHTML = '<span class="placeholder">fetching…</span>';
+    const fetched = await Promise.all(
+      panel.manualFields.map(f => fetchManualEntry(f.key))
+    );
     body.innerHTML = "";
-    const entries = loadManualEntries();
-    for (const field of panel.manualFields) {
-      body.appendChild(renderManualField(field, entries));
-    }
-    freshEl.textContent = "manual entry";
+    let latestAsOf = null;
+    panel.manualFields.forEach((field, i) => {
+      const stored = fetched[i];
+      body.appendChild(renderManualField(field, stored));
+      if (stored.asOf && (!latestAsOf || stored.asOf > latestAsOf)) latestAsOf = stored.asOf;
+    });
+    freshEl.textContent = latestAsOf ? `as of ${formatFreshness(latestAsOf)}` : "no data yet";
+    freshEl.className = `panel-freshness ${latestAsOf ? freshnessClass(latestAsOf, 14) : "error"}`;
     return;
   }
 
   if (panel.type === "mixed") {
+    body.innerHTML = '<span class="placeholder">fetching…</span>';
+    const manualFields = panel.manualFields || [];
+    const fetched = await Promise.all(
+      manualFields.map(f => fetchManualEntry(f.key))
+    );
     body.innerHTML = "";
-    const entries = loadManualEntries();
-    // Manual fields first
-    if (panel.manualFields) {
-      for (const field of panel.manualFields) {
-        body.appendChild(renderManualField(field, entries));
-      }
-    }
-    // Then any API metrics (COT etc — wired later)
-    if (panel.metrics && panel.metrics.length > 0) {
-      body.appendChild(document.createTextNode("")); // placeholder
-    }
-    freshEl.textContent = "manual entry";
+    let latestAsOf = null;
+    manualFields.forEach((field, i) => {
+      const stored = fetched[i];
+      body.appendChild(renderManualField(field, stored));
+      if (stored.asOf && (!latestAsOf || stored.asOf > latestAsOf)) latestAsOf = stored.asOf;
+    });
+    // API metrics (COT etc) wired in a later step
+    freshEl.textContent = latestAsOf ? `as of ${formatFreshness(latestAsOf)}` : "no data yet";
+    freshEl.className = `panel-freshness ${latestAsOf ? freshnessClass(latestAsOf, 14) : "error"}`;
     return;
   }
 
