@@ -140,7 +140,10 @@ function freshnessClass(isoDate, staleDays = 5) {
 function renderMetricRow(label, value, unit, asOf) {
   const el = document.createElement("div");
   el.className = "metric-row";
-  const valDisplay = value != null ? `${value}${unit ? " " + unit : ""}` : "—";
+  const formatted = value != null
+    ? value.toLocaleString("en-US", { maximumFractionDigits: 2 })
+    : null;
+  const valDisplay = formatted != null ? `${formatted}${unit ? " " + unit : ""}` : "—";
   const cls = value == null ? "neutral" : value > 0 ? "positive" : value < 0 ? "negative" : "neutral";
   el.innerHTML = `
     <span class="metric-label">${label}</span>

@@ -1,5 +1,21 @@
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
 
+// FRED native unit transformations applied server-side
+// pc1 = percent change from year ago; chg = period-over-period change
+const UNITS_OVERRIDE = {
+  CPIAUCSL:  "pc1",
+  CPILFESL:  "pc1",
+  PCEPI:     "pc1",
+  PCEPILFE:  "pc1",
+  PAYEMS:    "chg",
+};
+
+// Multiply raw FRED value by this factor before returning
+// BAMLH0A0HYM2 is in % pts on FRED; market convention quotes HY OAS in bps
+const SCALE = {
+  BAMLH0A0HYM2: 100,
+};
+
 async function fetchOneSeries(seriesId, apiKey) {
   const url = new URL(FRED_BASE);
   url.searchParams.set("series_id", seriesId);
@@ -8,14 +24,21 @@ async function fetchOneSeries(seriesId, apiKey) {
   url.searchParams.set("sort_order", "desc");
   url.searchParams.set("limit", "1");
 
+  const units = UNITS_OVERRIDE[seriesId];
+  if (units) url.searchParams.set("units", units);
+
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`FRED ${seriesId}: HTTP ${res.status}`);
   const data = await res.json();
 
   const obs = data.observations?.[0];
-  // FRED returns "." for missing/unreleased observations
   const raw = obs?.value;
-  const value = raw === "." || raw == null ? null : parseFloat(raw);
+  if (raw === "." || raw == null) return { value: null, date: obs?.date ?? null };
+
+  let value = parseFloat(raw);
+  const scale = SCALE[seriesId];
+  if (scale) value = Math.round(value * scale * 10) / 10;
+
   return { value, date: obs?.date ?? null };
 }
 
@@ -25,7 +48,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "FRED_API_KEY not configured" }),
+      body: JSON.stringify({ error: "FRED_KEY_V2 not configured" }),
     };
   }
 
