@@ -3,22 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Macro Dashboard</title>
+  <title>Macro Briefing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Macro Dashboard</h1>
-    <span id="last-refresh" class="refresh-time">—</span>
+  <header class="topbar">
+    <div class="brand">Macro Briefing</div>
+    <div class="topbar-right">
+      <span class="refresh-time" id="last-refresh">—</span>
+      <button class="refresh-btn" id="refresh-btn" aria-label="Refresh all data">
+        <span class="refresh-icon" id="refresh-icon">&#x21bb;</span> Refresh
+      </button>
+    </div>
   </header>
 
-  <main id="dashboard">
-    <!-- Panels are rendered by dashboard.js from PANEL_CONFIG -->
-    <p class="loading">Loading panels…</p>
-  </main>
+  <nav class="tabs" id="tabs"></nav>
 
-  <footer>
-    <span>Pipeline check: <strong id="api-status">checking…</strong></span>
+  <main id="views"></main>
+
+  <footer class="footer">
+    <span>Pipeline: <strong id="api-status">checking…</strong></span>
   </footer>
 
   <script src="dashboard.js"></script>
